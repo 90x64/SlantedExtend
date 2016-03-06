@@ -4,7 +4,7 @@ if (!defined('__TYPECHO_ROOT_DIR__')) exit;
  * <a href="https://dt27.org/Slanted-for-Typecho/" target="_blank">Slanted 主题</a>扩展插件
  *
  * 浏览量统计部分来自 	willin kan 的 Views 插件
- * 
+ *
  * @package SlantedExtend
  * @author DT27
  * @version 1.0.0
@@ -37,20 +37,20 @@ class SlantedExtend_Plugin implements Typecho_Plugin_Interface
         if (!array_key_exists('views', $db->fetchRow($db->select()->from('table.contents'))))
             $db->query('ALTER TABLE `'. $prefix .'contents` ADD `views` INT(10) DEFAULT 0;');
     }
-    
+
     /**
      * 禁用插件方法,如果禁用失败,直接抛出异常
-     * 
+     *
      * @static
      * @access public
      * @return void
      * @throws Typecho_Plugin_Exception
      */
     public static function deactivate(){}
-    
+
     /**
      * 获取插件配置面板
-     * 
+     *
      * @access public
      * @param Typecho_Widget_Helper_Form $form 配置面板
      * @return void
@@ -58,19 +58,19 @@ class SlantedExtend_Plugin implements Typecho_Plugin_Interface
     public static function config(Typecho_Widget_Helper_Form $form)
     {
     }
-    
+
     /**
      * 个人用户的配置面板
-     * 
+     *
      * @access public
      * @param Typecho_Widget_Helper_Form $form
      * @return void
      */
     public static function personalConfig(Typecho_Widget_Helper_Form $form){}
-    
+
     /**
      * 插件实现方法
-     * 
+     *
      * @access public
      * @return void
      */
@@ -360,7 +360,7 @@ $(document).ready(function () {
      * @param bool    $echo   是否显示 (0 用于运算，不显示)
      * @return string
      */
-    public static function theViews($before = '访问: ', $after = ' 次', $echo = 1)
+    public static function theViews($before = '浏览量: ', $after = ' ', $echo = 1)
     {
         $db = Typecho_Db::get();
         $cid = Typecho_Widget::widget('Widget_Archive')->cid;
@@ -378,11 +378,12 @@ $(document).ready(function () {
      *
      * @access public
      * @param int     $limit  文章数目
+     * @param int     $show 是否显示浏览量 1 是, 0 否
      * @param string  $before 前字串
      * @param string  $after  后字串
      * @return string
      */
-    public static function theMostViewed($limit = 10, $before = '<br/> - ( 访问: ', $after = ' 次 ) ')
+    public static function theMostViewed($limit = 10, $show = 1, $before = ' ( 浏览量: ', $after = ' ) ')
     {
         $db = Typecho_Db::get();
         $options = Typecho_Widget::widget('Widget_Options');
@@ -399,7 +400,11 @@ $(document).ready(function () {
                 $post_views = number_format($result['views']);
                 $post_title = htmlspecialchars($result['title']);
                 $permalink = $result['permalink'];
-                echo "<li><a href='$permalink' title='$post_title'>$post_title</a><span style='font-size:70%'>$before $post_views $after</span></li>\n";
+                echo "<li><a href='$permalink' title='$post_title'>$post_title</a>";
+                if($show)
+                    echo "<span style='font-size:70%'>$before $post_views $after</span></li>\n";
+                else
+                    echo "</li>\n";
             }
 
         } else {
