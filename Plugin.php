@@ -29,6 +29,10 @@ class SlantedExtend_Plugin implements Typecho_Plugin_Interface
         Typecho_Plugin::factory('admin/write-post.php')->option = array('SlantedExtend_Plugin', 'originalHtml');
         //原创文章
         Typecho_Plugin::factory('admin/write-post.php')->bottom = array('SlantedExtend_Plugin', 'originalJS');
+
+        //原创文章百度主动推送
+        Typecho_Plugin::factory('Widget_Contents_Post_Edit')->finishPublish = array('SlantedExtend_Plugin', 'originalPost');
+
         //浏览量统计
         Typecho_Plugin::factory('Widget_Archive')->beforeRender = array('SlantedExtend_Plugin', 'viewsCounter');
         $db = Typecho_Db::get();
@@ -57,6 +61,11 @@ class SlantedExtend_Plugin implements Typecho_Plugin_Interface
      */
     public static function config(Typecho_Widget_Helper_Form $form)
     {
+        //原创文章百度主动推送
+        $bUrl = new Typecho_Widget_Helper_Form_Element_Text('bUrl', NULL, NULL, _t('站点域名站点域名'),_t('在百度站长平台申请的推送用的准入密钥，<a href="http://zhanzhang.baidu.com/linksubmit/index" target="_blank">点此查看</a>'));
+        $form->addInput($bUrl);
+        $bToken = new Typecho_Widget_Helper_Form_Element_Text('bToken', NULL, NULL, _t('百度主动推送Token'),_t('在百度站长平台申请的推送用的准入密钥，<a href="http://zhanzhang.baidu.com/linksubmit/index" target="_blank">点此查看</a>'));
+        $form->addInput($bToken);
     }
 
     /**
@@ -410,5 +419,43 @@ $(document).ready(function () {
         } else {
             echo "<li>N/A</li>\n";
         }
+    }
+
+    /**
+     * 推送到百度
+     *
+     * @access public
+     * @return void
+     */
+    public static function originalPost($contents, $edit)
+    {
+        $slanted = Typecho_Widget::widget('Widget_Options')->plugin('SlantedExtend');
+        if($b3log->isHacPai == 1) {
+            $postData = array(
+                "article" => array(
+                    "id" => $edit->cid,
+                    "title" => $contents['title'],
+                    "permalink" => substr($edit->permalink,strlen($b3log->b3logHost)),//substr($str,4) [article.permalink] should start with /, for example, /hello-world
+                    "tags" => $contents['tags'],
+                    "content" => $contents['text'],
+                ),
+                "client" => array(
+                    "title" => $b3log->b3logTitle,
+                    "host" => $b3log->b3logHost,
+                    "email" => $b3log->b3logEmail,
+                    "key" => $b3log->b3logKey,
+                ));
+            $postString = json_encode($postData);
+            $ch = curl_init('http://data.zz.baidu.com/urls?site='.$slanted->bUrl.'&token='.$slanted->bToken);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($ch, CURLOPT_POSTFIELDS,$postString);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER,true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+                    'Content-Type: application/json',
+                    'Content-Length: ' . strlen($postString))
+            );
+            $result = curl_exec($ch);
+        }
+        return $contents;
     }
 }
